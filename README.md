@@ -36,7 +36,7 @@ The only constraint is the existence of RankingRules in your application nothing
 For example, using the context of a Game that have many players and referees.
 
 ```ruby
-Class Game < ActiveRecord::Base
+class Game < ActiveRecord::Base
 	has_rankings
 	has_many :players
 	has_many :referees
@@ -44,13 +44,13 @@ Class Game < ActiveRecord::Base
 	# ...
 end
 
-Class Player < ActiveRecord::Base
+class Player < ActiveRecord::Base
 	is_rankeable
 
 	# ...
 end
 
-Class Referee < ActiveRecord::Base
+class Referee < ActiveRecord::Base
 	is_rankeable
 	# ...
 end
