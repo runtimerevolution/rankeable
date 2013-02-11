@@ -1,4 +1,5 @@
 # Rankeable
+[![Build Status](https://travis-ci.org/runtimerevolution/rankeable.png?branch=master)](https://travis-ci.org/runtimerevolution/rankeable)
 
 #### Rankeable is a Ranking System for your Rails Application.
 
