@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rankeable (0.1.1)
+    rankeable (0.0.1)
       rails (>= 3.0)
 
 GEM
