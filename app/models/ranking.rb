@@ -28,9 +28,10 @@ class Ranking < ActiveRecord::Base
         ::RankingValue.create! do |rv|
           rv.ranking = self
           rv.value = subject_rank.value
-          rv.position = index+1
+          rv.position = index + 1
           rv.ranked_object = subject_rank.subject
           rv.label = subject_rank.label
+          args.last.call(rv) if args.try(:last).try(:is_a?, Proc)
         end
       end
     end
