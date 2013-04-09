@@ -170,4 +170,7 @@ rank_scores_for_refeeres = @game.rankings.where(:ranked_call => "number_of_goals
 rank_scores_for_refeeres.delay.calculate
 ```
 
-This project rocks and uses MIT-LICENSE.
+# License
+Copyright © 2013 [Runtime Revolution](http://www.runtime-revolution.com), released under the MIT license.
+
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/77fd99fe7f3e7e6bc5395a5897a734d4 "githalytics.com")](http://githalytics.com/runtimerevolution/rankeable)
