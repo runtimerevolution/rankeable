@@ -1,37 +1,47 @@
 # Rankeable
 [![Build Status](https://travis-ci.org/runtimerevolution/rankeable.png?branch=master)](https://travis-ci.org/runtimerevolution/rankeable)
 
-#### Rankeable is a Ranking System for your Rails Application.
+#### Rankeable is a ranking system for Rails applications
 
-Rankeable Gem wraps all the model content of your rankings and let you define only
-the rules your ranking needs.
+Rankeable allows you to easily add rankings to your models in a Rails application. It's geared towards rankings that are too expensive to calculate on the request cycle, and must be calculated periodically in the background.
 
-Rankeable is useful when:
- - you want to extract business rules from models
- - you have sorting rules and you want apply those rules to different models
+Any object can be ranked, and any number of different rankings can be created, with different ranking rules.
 
-## Getting Started
+## Documentation
 
-### Main Features:
+You can view the Survey documentation in RDoc format here:
 
-- High flexibility for different scenarios (make strategies of sorting applied to different models)
-- Easy Integration with DelayJob, SideKiq and Resque
+http://rubydoc.info/github/runtimerevolution/rankeable/frames
+
+## Main Features:
+
+- A flexible model allowing any object to be ranked
+- Multiple rankings and ranking rules
+- Easy integration with delayed_job, sidekiq and resque for background calculation
 
 ## Installation
 
+Add Rankeable to your Gemfile:
+
 ```ruby
-gem 'rankeable'
+gem 'rankeable', :git => 'git://github.com/runtimerevolution/rankeable.git'
 ```
-Afterwards copy and run migrations:
+
+Then run bundle to install the Gem:
 ```sh
-rails generate rankeable:install
+bundle install
+```
+
+Now generate and run migrations:
+```sh
+rails generate survey:install
 bundle exec rake db:migrate
 ```
-After Installation Rankeable generates a RankingsRules Class
-inside of ranking_concerns folder (you can change the location of RankingRules Class.
-The only constraint is the existence of RankingRules in your application nothing more).
 
-## Integrate Rankeable with your Business Logic
+After installation Rankeable generates a RankingsRules class inside of ranking_concerns folder (you 
+can change the location of RankingRules class. The only constraint is the existence of RankingRules in your application).
+
+## Getting Started
 
 For example, using the context of a Game that have many players and referees.
 
@@ -59,13 +69,13 @@ end
 
 Ranking has some important components:
 
-- rankeable: which is the object with rankings assigned (in our example is Game). Give us to context of ranking, e.g the current game.
-- ranked_type: The model we want to rank
-- ranked_call: The strategy chosen to rank the ranked_type
+- rankeable: the owner of the rankings (in our example it's Game). Contextualizes the ranking
+- ranked_type: The ranked model
+- ranked_call: The calculation function that actually ranks objects
 
-## Create New Ranking
+## Creating rankings
 
-1. Add a ranking rule that takes the number of goals by player:
+Add a ranking and ranking rule that ranks players by number of goals scored:
 
 ```ruby
 # creating ranking with rule "number_of_goals"
@@ -77,13 +87,13 @@ Ranking has some important components:
 # Rule Number of Goals
 def number_of_goals(ranking, *args)
 	ranking.rankeable.players.order("goals DESC").map do |player|
-		OpenStructure.new(:value => player.goals,
-			:ranked_object => player, label => "#{player.name} - #{player.number}")
+		OpenStruct.new(:value => player.goals,
+			:ranked_object => player, :label => "#{player.name} - #{player.number}")
 	end
 end
 ```
 
-2. Add a ranking rule that takes the number of faults marked in the game:
+Add a ranking and ranking rule that ranks players by the number of faults:
 
 ```ruby
 # creating ranking with rule "number_of_faults"
@@ -96,7 +106,7 @@ end
 def number_of_faults(ranking, *args)
 	ranking.rankeable.refeeres.map { |refeere|
 		total_faults = refeere.red_cards + refeere.yellow_cards
-		OpenStructure.new(:value => total_faults,
+		OpenStruct.new(:value => total_faults,
 			:ranked_object => player, :label => refeere.name)
 	}.sort {|a,b| b.value <=> a.value }
 end
@@ -107,35 +117,25 @@ Every Ranking Rule must return a collection with objects that respond to:
 
 - label => a label describing the object ranked
 - ranked_object => The target object of the ranking
-- value => The value calculated on Ranking rule
+- value => The value calculated on Ranking rule (something that can be converted to a float)
 
 ## See Rankeable Working
 
 ```ruby
 # find our number_of_goals strategy for this game
-rank_scores = @game.rankings.find_by_name("goals_by_player")
+ranking = Game.first.rankings.find_by_name("goals_by_player")
 
 #calculate our rankings
-rank_scores.calculate
+ranking.calculate
 
 # show the results
-puts @values_of_score
+ranking.values
 => [#<RankingValue position=1, value=2, ranked_object=#<Player id: 13, name: "Chuck Norris", goals: 2, created_at: "2013-01-31 14:48:54", updated_at: "2013-01-31 14:48:54">>,
 #<RankingValue position=2, value=1, ranked_object=#<User id: 8, name: "Bob", goals: 1, created_at: "2013-01-31 14:48:54", updated_at: "2013-01-31 14:48:54">>]
 
-# calculate the number_of_faults strategy
-number_of_cards_rank = @game.rankings.find_by_name("faults_by_refeere")
-
-# calculate our rankings
-number_of_cards_rank.calculate
-
-# check the result of our ranking strategy
-@cards_values = number_of_cards_rank.values
-
-# show the results
-puts @cards_values
-=> [#<RankingValue position=1, value=3, ranked_object=#<Refeere id: 13, name: "Rijjecak", yellow_cards: 2, red_cards=1, created_at: "2013-01-31 14:48:54", updated_at: "2013-01-31 14:48:54">>,
-#<RankingValue position=2, value=1, ranked_object=#<Refeere id: 8, name: "Jackson", yellow_cards=1, red_cards=0, created_at: "2013-01-31 14:48:54", updated_at: "2013-01-31 14:48:54">>]
+# What's the position of a particular player in the ranking ?
+ranking.ranked_item_position(Player.find_by_name('Chuck Norris'))
+=> 25
 
 ```
 ## Help your migrations
@@ -158,11 +158,11 @@ Next, you must run the migrate command in order to the changes
 take the effect.
 
 
-## Integration with Delay Job and others
+## Integration with delayed_job and others
 
-When we have more complicated rules we dont want to make the calculations during the request time
-so you can integrate Rankeable with delay_job, sidekiq or resque.
-Just an example using Delay Job:
+Usually rankings need to be calculated in the background, using something like delayed_job, sidekiq or resque.
+
+An example using delayed_job:
 
 ```ruby
 rank_scores_for_refeeres = @game.rankings.where(:ranked_call => "number_of_goals",
