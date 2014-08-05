@@ -12,12 +12,13 @@ class Ranking < ActiveRecord::Base
 
   validates :rankeable, :presence => true
   validate :ranked_type_call_existence
-  scope :by_position, :order => :position
+
+  scope :by_position, -> { order(:position) }
 
   # given a ranked item, return it's position in this ranking,
   # if any, or nil if the item isn't positioned on this ranking
   def ranked_item_position(ranked_object)
-    self.values.find_by_ranked_object_id(ranked_object).try(:position)
+    self.values.find_by(ranked_object_id: ranked_object).try(:position)
   end
 
   def calculate(*args)
