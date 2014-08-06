@@ -2,9 +2,9 @@ class Ranking < ActiveRecord::Base
 
   belongs_to :rankeable, :polymorphic => true
   # Ranking values. Will be deleted if a Ranking is destroyed
-  has_many  :values,
+  has_many  :values, 
             :class_name => 'RankingValue',
-            :order => 'position, id ASC',
+             -> { order('ranking_values.position, ranking_values.id ASC') },
             :dependent => :destroy
 
   validates :ranked_type,
